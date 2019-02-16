@@ -2,6 +2,11 @@
 
 # ipset-update.sh (C) 2012-2015 Matt Parnell http://www.mattparnell.com
 # Licensed under the GNU-GPLv2+
+#
+# This script updates ipset rules based on lists from iblocklist
+# config: /etc/blocklists/iblocklist.lists
+
+
 
 # place to keep our cached blocklists
 LISTDIR="/var/cache/blocklists"
@@ -12,15 +17,9 @@ LISTDIR="/var/cache/blocklists"
 # countries to block, must be lcase
 COUNTRIES=(af ae ir iq tr cn sa sy ru ua hk id kz kw ly)
 
-# iblocklist lists to use - they now obfuscate these so get them from
-# https://www.iblocklist.com/lists.php
-IBLNAME=(DShield Bogon Hijacked DROP ForumSpam WebExploit Ads Proxies BadSpiders CruzIT Zeus Palevo Malicious Malcode Adservers)
-IBLKEY=(xpbqleszmajjesnzddhv lujdnbasfaaixitgmxpp usrcshglbiilevmyfhse zbdlwrqkabxbcppvrnos ficutxiwawokxlcyoeye ghlzqtqxnzctvvajwwag dgxtneitpuvgqqcpfulq xoebmbyexwuiogmbyprb mcvxsnihddgutbjfbghy czvaehmjpsnwwttrdoyl ynkdjqsjyfmilsgbogqf erqajhwrxiuvjxqrrwfj npkuuhuxcsllnhoamkvm pbqcylkejciyhmwttify zhogegszwduurnvsyhdf) 
-
 # set these to access iblocklist subscription lists
 #IBL_USER=
 #IBL_PIN=
-
 
 # ports to block tor users from
 PORTS=(80 443 6667 22 21)
@@ -80,6 +79,17 @@ importList(){
 
 if [ "$ENABLE_IBLOCKLIST" = 1 ]; then
   [ -n "$IBL_USER" ] && [ -n "$IBL_PIN" ] && cred="&username=$IBL_USER&pin=$IBL_PIN"
+
+  IFS="="
+  while read -r name value
+  do
+    # clean leading/trailing whitespace and quotes
+    name=$(echo "${name//\"/}" | awk '{$1=$1};1'); value=$(echo "${value//\"/}" | awk '{$1=$1};1')
+    # ignore comments and lines without both name and key
+    [ -z "$name" ] || [ -z "$value" ] || [ "${name:0:1}" = "#" ] && continue
+    IBLNAME+=($name); IBLKEY+=($value)
+  done < /etc/blocklists/iblocklist.lists
+  IFS=""
 
   # get, parse, and import the iblocklist lists
   # they are special in that they are gz compressed and require
