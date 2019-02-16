@@ -13,11 +13,16 @@ fi
 confdir=/etc/blocklists # path also hardcoded in ipset-update.sh
 echo Creating configuration in $confdir
 [ ! -d "$confdir" ] && mkdir "$confdir"
+
 cp iblocklist.lists.default $confdir
 if [ ! -f $confdir/iblocklist.lists ]; then
   cp $confdir/iblocklist.lists.default $confdir/iblocklist.lists
 fi
 
+cp ipset-update.conf.default $confdir
+if [ ! -f $confdir/ipset-update.conf ]; then
+  cp $confdir/ipset-update.conf.default $confdir/ipset-update.conf
+fi
 
 credpath=$confdir/iblocklist.cred # path also hardcoded in ipset-update.sh
 skipCred=0
