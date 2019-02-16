@@ -26,7 +26,7 @@ PORTS=(80 443 6667 22 21)
 [ -f $LISTDIR/tor.txt ] && rm $LISTDIR/tor.txt
 
 # enable bluetack lists?
-ENABLE_BLUETACK=1
+ENABLE_IBLOCKLIST=1
 
 # enable country blocks?
 ENABLE_COUNTRY=0
@@ -72,8 +72,8 @@ importList(){
   fi
 }
 
-if [ $ENABLE_BLUETACK = 1 ]; then
-  # get, parse, and import the bluetack lists
+if [ "$ENABLE_IBLOCKLIST" = 1 ]; then
+  # get, parse, and import the iblocklist lists
   # they are special in that they are gz compressed and require
   # pg2ipset to be inserted
   i=0
