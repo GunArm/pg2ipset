@@ -12,10 +12,10 @@ LISTDIR="/var/cache/blocklists"
 # countries to block, must be lcase
 COUNTRIES=(af ae ir iq tr cn sa sy ru ua hk id kz kw ly)
 
-# bluetack lists to use - they now obfuscate these so get them from
+# iblocklist lists to use - they now obfuscate these so get them from
 # https://www.iblocklist.com/lists.php
-BLUETACKALIAS=(DShield Bogon Hijacked DROP ForumSpam WebExploit Ads Proxies BadSpiders CruzIT Zeus Palevo Malicious Malcode Adservers)
-BLUETACK=(xpbqleszmajjesnzddhv lujdnbasfaaixitgmxpp usrcshglbiilevmyfhse zbdlwrqkabxbcppvrnos ficutxiwawokxlcyoeye ghlzqtqxnzctvvajwwag dgxtneitpuvgqqcpfulq xoebmbyexwuiogmbyprb mcvxsnihddgutbjfbghy czvaehmjpsnwwttrdoyl ynkdjqsjyfmilsgbogqf erqajhwrxiuvjxqrrwfj npkuuhuxcsllnhoamkvm pbqcylkejciyhmwttify zhogegszwduurnvsyhdf) 
+IBLNAME=(DShield Bogon Hijacked DROP ForumSpam WebExploit Ads Proxies BadSpiders CruzIT Zeus Palevo Malicious Malcode Adservers)
+IBLKEY=(xpbqleszmajjesnzddhv lujdnbasfaaixitgmxpp usrcshglbiilevmyfhse zbdlwrqkabxbcppvrnos ficutxiwawokxlcyoeye ghlzqtqxnzctvvajwwag dgxtneitpuvgqqcpfulq xoebmbyexwuiogmbyprb mcvxsnihddgutbjfbghy czvaehmjpsnwwttrdoyl ynkdjqsjyfmilsgbogqf erqajhwrxiuvjxqrrwfj npkuuhuxcsllnhoamkvm pbqcylkejciyhmwttify zhogegszwduurnvsyhdf) 
 # ports to block tor users from
 PORTS=(80 443 6667 22 21)
 
@@ -77,16 +77,16 @@ if [ $ENABLE_BLUETACK = 1 ]; then
   # they are special in that they are gz compressed and require
   # pg2ipset to be inserted
   i=0
-  for list in ${BLUETACK[@]}; do  
-	if [ eval $(wget --quiet -O /tmp/${BLUETACKALIAS[i]}.gz http://list.iblocklist.com/?list=$list&fileformat=p2p&archiveformat=gz) ]; then
-	  mv /tmp/${BLUETACKALIAS[i]}.gz $LISTDIR/${BLUETACKALIAS[i]}.gz
+  for list in ${IBLKEY[@]}; do  
+	if [ eval $(wget --quiet -O /tmp/${IBLNAME[i]}.gz http://list.iblocklist.com/?list=$list&fileformat=p2p&archiveformat=gz) ]; then
+	  mv /tmp/${IBLNAME[i]}.gz $LISTDIR/${IBLNAME[i]}.gz
 	else
-	  echo "Using cached list for ${BLUETACKALIAS[i]}."
+	  echo "Using cached list for ${IBLNAME[i]}."
 	fi
 	
-	echo "Importing bluetack list ${BLUETACKALIAS[i]}..."
+	echo "Importing bluetack list ${IBLNAME[i]}..."
   
-	importList ${BLUETACKALIAS[i]} 1
+	importList ${IBLNAME[i]} 1
 	
 	i=$((i+1))
   done
@@ -103,7 +103,6 @@ if [ $ENABLE_COUNTRY = 1 ]; then
   
   importList "countries" 0
 fi
-
 
 if [ $ENABLE_TORBLOCK = 1 ]; then
   # get the tor lists and cat them into a single file
