@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
-
+#
 # ipset-update.sh (C) 2012-2015 Matt Parnell http://www.mattparnell.com
 # Licensed under the GNU-GPLv2+
 #
 # This script updates ipset rules based on lists from iblocklist
-# config: /etc/blocklists/iblocklist.lists
+#
+# config: /etc/blocklists/ipset-update.conf
+# iblocklist list selection: /etc/blocklists/iblocklist.lists
+# iblocklist subscription pin: /etc/blocklists/iblocklist.cred
 
-
+. /etc/blocklists/ipset-update.conf
 
 # place to keep our cached blocklists
 LISTDIR="/var/cache/blocklists"
@@ -14,30 +17,11 @@ LISTDIR="/var/cache/blocklists"
 # create cache directory for our lists if it isn't there
 [ ! -d $LISTDIR ] && mkdir $LISTDIR
 
-# countries to block, must be lcase
-COUNTRIES=(af ae ir iq tr cn sa sy ru ua hk id kz kw ly)
-
-# set these to access iblocklist subscription lists
-#IBL_USER=
-#IBL_PIN=
-
-# ports to block tor users from
-PORTS=(80 443 6667 22 21)
-
 # remove old countries list
 [ -f $LISTDIR/countries.txt ] && rm $LISTDIR/countries.txt
 
 # remove the old tor node list
 [ -f $LISTDIR/tor.txt ] && rm $LISTDIR/tor.txt
-
-# enable bluetack lists?
-ENABLE_IBLOCKLIST=1
-
-# enable country blocks?
-ENABLE_COUNTRY=0
-
-# enable tor blocks?
-ENABLE_TORBLOCK=1
 
 #cache a copy of the iptables rules
 IPTABLES=$(iptables-save)
