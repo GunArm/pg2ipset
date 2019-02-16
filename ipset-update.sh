@@ -76,19 +76,16 @@ if [ "$ENABLE_IBLOCKLIST" = 1 ]; then
   # get, parse, and import the iblocklist lists
   # they are special in that they are gz compressed and require
   # pg2ipset to be inserted
-  i=0
-  for list in ${IBLKEY[@]}; do  
-	if [ eval $(wget --quiet -O /tmp/${IBLNAME[i]}.gz http://list.iblocklist.com/?list=$list&fileformat=p2p&archiveformat=gz) ]; then
-	  mv /tmp/${IBLNAME[i]}.gz $LISTDIR/${IBLNAME[i]}.gz
-	else
-	  echo "Using cached list for ${IBLNAME[i]}."
-	fi
-	
-	echo "Importing bluetack list ${IBLNAME[i]}..."
-  
-	importList ${IBLNAME[i]} 1
-	
-	i=$((i+1))
+  for i in "${!IBLKEY[@]}"; do
+    name=${IBLNAME[i]}; list=${IBLKEY[i]};
+    if [ eval $(wget --quiet -O /tmp/$name.gz http://list.iblocklist.com/?list=$list&fileformat=p2p&archiveformat=gz) ]; then
+      mv /tmp/$name.gz $LISTDIR/$name.gz
+    else
+      echo "Using cached list for $name."
+    fi
+
+    echo "Importing iblocklist list $name..."
+    importList "$name" 1
   done
 fi
 
