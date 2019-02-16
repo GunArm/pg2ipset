@@ -1,0 +1,55 @@
+# IBLOCKLIST sources for pg2ipset/ipset-update
+# format: NAME=KEY
+# used with  http://list.iblocklist.com/?list=KEY&fileformat=p2p&archiveformat=gz
+#
+# find list descriptions at https://www.iblocklist.com/lists
+# comment/uncomment lines to toggle list usage
+# NOTE: ENABLE_IBLOCKLIST must be on in /etc/blocklists/ipset-update.conf
+
+## iblocklist's in house lists
+#IBL-Anti-Infringement=srzondksmjuwsvmgdbhi
+#IBL-Government=lakuncfhfhgiqghqxjzi
+#IBL-Spammers=rynxmrknfjysesjtjlxy
+#IBL-Pedophiles=dufcxgnbjsdwmwctgfuj
+
+## Squidblacklist
+#SBL-US_Government_Blacklist=chykyvyiwrfszbqynhnd
+#SBL-Prime=tkyphgqwfqmawathcozn
+#SBL-Malicious=ffxgwdvcgelinvypvhuz
+#SBL-Piracy_Related=gzuamdjmitutrcvsmuwv
+#SBL-Pornography=nndhjdnpxvydcupzaann
+#SBL-Ads_and_Trackers=fruzekpkpzlmzozmuuhx
+#SBL-Proxies=xafnpguypyaewkmuugbd
+
+## Bluetack lists
+#BTK-level1=ydxerpxkpcfqjaybcssw
+#BTK-level2=gyisgnzbhppbvsphucsw
+#BTK-level3=uwnukjqktoggdknzrhgh
+#BTK-edu=imlmncgrkbnacgcwfjvh
+#BTK-rangetest=plkehquoahljmyxjixpu
+#BTK-bogon=gihxqmhyunbxhbmgqrla
+BTK-ads=dgxtneitpuvgqqcpfulq
+#BTK-spyware=llvtlsjyoyiczbkjsxpf
+BTK-proxy=xoebmbyexwuiogmbyprb
+#BTK-badpeers=cwworuawihqvocglcoss
+#BTK-Microsoft=xshktygkujudfnjfioro
+BTK-spider=mcvxsnihddgutbjfbghy
+BTK-hijacked=usrcshglbiilevmyfhse
+BTK-dshield=xpbqleszmajjesnzddhv
+BTK-forumspam=ficutxiwawokxlcyoeye
+BTK-webexploit=ghlzqtqxnzctvvajwwag
+#BTK-iana-reserved=bcoepfyewziejvcqyhqo
+#BTK-iana-private=cslpybexmxyuacbyuvib
+#BTK-iana-multicast=pwqnlynprfgtjbgqoizj
+#BTK-fornonlancomputers=jhaoawihmfxgnvmaqffp
+#BTK-exclusions=mtxmiireqmjzazcsoiem
+
+## Other lists
+Spamhaus-DROP=zbdlwrqkabxbcppvrnos
+abuse-ZeuS=ynkdjqsjyfmilsgbogqf
+abuse-Palevo=erqajhwrxiuvjxqrrwfj
+CINSscore-CINS_Army=npkuuhuxcsllnhoamkvm
+malc0de-malc0de=pbqcylkejciyhmwttify
+adservers=zhogegszwduurnvsyhdf
+cidr-report-bogon=lujdnbasfaaixitgmxpp
+CruzIT-cruzit_web_attacks=czvaehmjpsnwwttrdoyl
