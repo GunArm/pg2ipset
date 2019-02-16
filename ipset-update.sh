@@ -16,6 +16,12 @@ COUNTRIES=(af ae ir iq tr cn sa sy ru ua hk id kz kw ly)
 # https://www.iblocklist.com/lists.php
 IBLNAME=(DShield Bogon Hijacked DROP ForumSpam WebExploit Ads Proxies BadSpiders CruzIT Zeus Palevo Malicious Malcode Adservers)
 IBLKEY=(xpbqleszmajjesnzddhv lujdnbasfaaixitgmxpp usrcshglbiilevmyfhse zbdlwrqkabxbcppvrnos ficutxiwawokxlcyoeye ghlzqtqxnzctvvajwwag dgxtneitpuvgqqcpfulq xoebmbyexwuiogmbyprb mcvxsnihddgutbjfbghy czvaehmjpsnwwttrdoyl ynkdjqsjyfmilsgbogqf erqajhwrxiuvjxqrrwfj npkuuhuxcsllnhoamkvm pbqcylkejciyhmwttify zhogegszwduurnvsyhdf) 
+
+# set these to access iblocklist subscription lists
+#IBL_USER=
+#IBL_PIN=
+
+
 # ports to block tor users from
 PORTS=(80 443 6667 22 21)
 
@@ -73,12 +79,14 @@ importList(){
 }
 
 if [ "$ENABLE_IBLOCKLIST" = 1 ]; then
+  [ -n "$IBL_USER" ] && [ -n "$IBL_PIN" ] && cred="&username=$IBL_USER&pin=$IBL_PIN"
+
   # get, parse, and import the iblocklist lists
   # they are special in that they are gz compressed and require
   # pg2ipset to be inserted
   for i in "${!IBLKEY[@]}"; do
     name=${IBLNAME[i]}; list=${IBLKEY[i]};
-    if [ eval $(wget --quiet -O /tmp/$name.gz http://list.iblocklist.com/?list=$list&fileformat=p2p&archiveformat=gz) ]; then
+    if [ eval $(wget --quiet -O /tmp/$name.gz http://list.iblocklist.com/?list=$list&fileformat=p2p&archiveformat=gz$cred) ]; then
       mv /tmp/$name.gz $LISTDIR/$name.gz
     else
       echo "Using cached list for $name."
