@@ -1,6 +1,9 @@
 # config for ipset-update.sh
 
 
+ENABLE_LOGGING=1
+LOG_FILE="/var/log/ipset-update.log"
+
 # enable iblocklist lists?
 ENABLE_IBLOCKLIST=1
 # list activation in /etc/blocklists/iblocklist.lists

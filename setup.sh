@@ -2,12 +2,24 @@
 
 if [ $EUID -ne 0 ]; then echo "Please run as root"; exit 1; fi
 
+ENABLE_LOGGING=1
+LOG_FILE="/var/log/ipset-update.log"
+log(){
+  [ -n "$1" ] && msg="$1" || read msg
+  echo "$msg"
+  [ "$ENABLE_LOGGING" -ne "1" ] && return 0
+  echo "$(date '+%F %T') - $msg" >> "$LOG_FILE"
+}
+
+log "Running ipset-update setup..."
+
 # build and install pg2ipset.c
 if ! result=$(make build && make install && make clean 2>&1); then
   log "$result"
-  echo Failed to install pg2ipset tool!
+  log "FAILED to install pg2ipset tool!"
   exit 1
 fi
+log "Installed pg2ipset list conversion tool"
 
 
 confdir=/etc/blocklists # path also hardcoded in ipset-update.sh
@@ -17,11 +29,15 @@ echo Creating configuration in $confdir
 cp iblocklist.lists.default $confdir
 if [ ! -f $confdir/iblocklist.lists ]; then
   cp $confdir/iblocklist.lists.default $confdir/iblocklist.lists
+else
+  log "Preserved existing $confdir/iblocklist.lists"
 fi
 
 cp ipset-update.conf.default $confdir
 if [ ! -f $confdir/ipset-update.conf ]; then
   cp $confdir/ipset-update.conf.default $confdir/ipset-update.conf
+else
+  log "Preserved existing $confdir/ipset-update.conf"
 fi
 
 credpath=$confdir/iblocklist.cred # path also hardcoded in ipset-update.sh
@@ -51,6 +67,9 @@ if [ "$skipCred" != "1" ]; then
   log "Created $credpath"
 fi
 
-echo Scheduling update to run daily
+log "Scheduling ipset-update to run daily"
 cp ipset-update.sh /etc/cron.daily/ipset-update # no '.sh' extensions here
+
+log "Setup complete.  Set your lists at $confdir/iblocklist.lists"
+echo
 

@@ -26,9 +26,17 @@ LISTDIR="/var/cache/blocklists"
 #cache a copy of the iptables rules
 IPTABLES=$(iptables-save)
 
+log(){
+  [ -n "$1" ] && msg="$1" || read msg
+  [ -z "$msg" ] && return 0
+  echo "$msg"
+  [ "$ENABLE_LOGGING" -ne "1" ] && return 0
+  echo "$(date '+%F %T') - $msg" >> "$LOG_FILE"
+}
+
 importList(){
   if [ -f $LISTDIR/$1.txt ] || [ -f $LISTDIR/$1.gz ]; then
-	echo "Importing $1 blocks..."
+	log "Updating ipset $1..."
 	
 	ipset create -exist $1 hash:net maxelem 4294967295
 	ipset create -exist $1-TMP hash:net maxelem 4294967295
@@ -46,6 +54,7 @@ importList(){
 	
 	# only create if the iptables rules don't already exist
 	if ! echo $IPTABLES|grep -q "\-A\ INPUT\ \-m\ set\ \-\-match\-set\ $1\ src\ \-\j\ DROP"; then
+	  log "Creating block rules for set $1"
           iptables -A INPUT -m set --match-set $1 src -j ULOG --ulog-prefix "Blocked input $1"
           iptables -A FORWARD -m set --match-set $1 src -j ULOG --ulog-prefix "Blocked fwd $1"
           iptables -A FORWARD -m set --match-set $1 dst -j ULOG --ulog-prefix "Blocked fwd $1"
@@ -55,13 +64,16 @@ importList(){
 	  iptables -A FORWARD -m set --match-set $1 src -j DROP
 	  iptables -A FORWARD -m set --match-set $1 dst -j REJECT
 	  iptables -A OUTPUT -m set --match-set $1 dst -j REJECT
+        else
+	  log "Block rules exist for set $1"
 	fi
   else
-	echo "List $1.txt does not exist."
+	log "FAILED attempted import! List $LISTDIR/$1.[txt,gz] does not exist."
   fi
 }
 
 if [ "$ENABLE_IBLOCKLIST" = 1 ]; then
+  log "Updating iblocklist lists..."
   . /etc/blocklists/iblocklist.cred
   [ -n "$IBL_USER" ] && [ -n "$IBL_PIN" ] && cred="&username=$IBL_USER&pin=$IBL_PIN"
 
@@ -75,6 +87,7 @@ if [ "$ENABLE_IBLOCKLIST" = 1 ]; then
     IBLNAME+=($name); IBLKEY+=($value)
   done < /etc/blocklists/iblocklist.lists
   IFS=""
+  log "Config iblocklist.lists specifies ${#IBLNAME[@]} enabled lists: ${IBLNAME[*]}"
 
   # get, parse, and import the iblocklist lists
   # they are special in that they are gz compressed and require
@@ -83,41 +96,58 @@ if [ "$ENABLE_IBLOCKLIST" = 1 ]; then
     name=${IBLNAME[i]}; list=${IBLKEY[i]};
     if [ eval $(wget --quiet -O /tmp/$name.gz http://list.iblocklist.com/?list=$list&fileformat=p2p&archiveformat=gz$cred) ]; then
       mv /tmp/$name.gz $LISTDIR/$name.gz
+      log "Retrieved iblocklist $name"
     else
-      echo "Using cached list for $name."
+      log "FAILED retrieving iblocklist $name.  Cache will be used."
     fi
 
-    echo "Importing iblocklist list $name..."
     importList "$name" 1
   done
+  log "Finished iblocklist update"
 fi
 
 if [ $ENABLE_COUNTRY = 1 ]; then
+  IFS=" "
+  log "Updating country blocklist.  ${#COUNTRIES[@]} specified: ${COUNTRIES[*]}"
+  IFS=""
   # get the country lists and cat them into a single file
   for country in ${COUNTRIES[@]}; do
-	if [ eval $(wget --quiet -O /tmp/$country.txt http://www.ipdeny.com/ipblocks/data/countries/$country.zone) ]; then
-	  cat /tmp/$country.txt >> $LISTDIR/countries.txt
-	  rm /tmp/$country.txt
-	fi
+    if [ eval $(wget --quiet -O /tmp/$country.txt http://www.ipdeny.com/ipblocks/data/countries/$country.zone) ]; then
+      cat "/tmp/$country.txt" >> "$LISTDIR/countries.txt"
+      rm "/tmp/$country.txt"
+      log "Retrieved ipdeny list for country \'$country\'"
+    else
+      log "FAILED retrieving ipdeny list for country \'$country\'.  No ips for $country will be blocked!"
+    fi
   done
   
   importList "countries" 0
+  log "Finished country blocklist update"
 fi
 
 if [ $ENABLE_TORBLOCK = 1 ]; then
+  IFS=" "
+  log "Updating tor blocklist.  ${#PORTS[@]} specified to block tor users from: ${PORTS[*]}"
+  IFS=""
   # get the tor lists and cat them into a single file
   for ip in $(ip -4 -o addr | awk '!/^[0-9]*: ?lo|link\/ether/ {gsub("/", " "); print $4}'); do
-	for port in ${PORTS[@]}; do
-	  if [ eval $(wget --quiet -O /tmp/$port.txt https://check.torproject.org/cgi-bin/TorBulkExitList.py?ip=$ip&port=$port) ]; then
-		cat /tmp/$port.txt >> $LISTDIR/tor.txt
-		rm /tmp/$port.txt
-	  fi
-	done
+    for port in "${PORTS[@]}"; do
+      if [ eval $(wget --quiet -O /tmp/$port.txt https://check.torproject.org/cgi-bin/TorBulkExitList.py?ip=$ip&port=$port) ]; then
+        cat "/tmp/$port.txt" >> "$LISTDIR/tor.txt"
+        rm "/tmp/$port.txt"
+        log "Retrieved Tor Bulk Exit List for $ip:$port"
+      else
+        log "FAILED retrieving Tor Bulk Exit List for $ip:$port.  No ips for $ip:$port will be blocked!"
+      fi
+    done
   done 
   
   importList "tor" 0
+  log "Finished tor blocklist update"
 fi
 
 # add any custom import lists below
 # ex: importTextList "custom"
 
+
+log "Completed ipset blocklist update"
