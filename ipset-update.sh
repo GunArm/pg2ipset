@@ -9,6 +9,11 @@
 # iblocklist list selection: /etc/blocklists/iblocklist.lists
 # iblocklist subscription pin: /etc/blocklists/iblocklist.cred
 
+
+if [ $EUID -ne 0 ]; then echo "Please run as root"; exit 1; fi
+
+#####################
+
 log(){
   [ -n "$1" ] && msg="$1" || read msg
   echo $msg
@@ -55,7 +60,6 @@ importList(){
 }
 
 #####################
-
 
 . /etc/blocklists/ipset-update.conf
 
