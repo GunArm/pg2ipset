@@ -2,17 +2,18 @@
 # format: NAME=KEY
 # used with  http://list.iblocklist.com/?list=KEY&fileformat=p2p&archiveformat=gz
 #
+# IBL and SBL lists are paid subscriptions and REQUIRE credentials in /etc/blocklists/iblocklist.cred
 # find list descriptions at https://www.iblocklist.com/lists
 # comment/uncomment lines to toggle list usage
 # NOTE: ENABLE_IBLOCKLIST must be on in /etc/blocklists/ipset-update.conf
 
-## iblocklist's in house lists
+## iblocklist's in house lists - these require subscription credentials
 #IBL-Anti-Infringement=srzondksmjuwsvmgdbhi
 #IBL-Government=lakuncfhfhgiqghqxjzi
 #IBL-Spammers=rynxmrknfjysesjtjlxy
 #IBL-Pedophiles=dufcxgnbjsdwmwctgfuj
 
-## Squidblacklist
+## Squidblacklist - these require subscription credentials
 #SBL-US_Government_Blacklist=chykyvyiwrfszbqynhnd
 #SBL-Prime=tkyphgqwfqmawathcozn
 #SBL-Malicious=ffxgwdvcgelinvypvhuz
