@@ -78,6 +78,7 @@ importList(){
 }
 
 if [ $ENABLE_IBLOCKLIST = 1 ]; then
+  . /etc/blocklists/iblocklist.cred
   [ -n "$IBL_USER" ] && [ -n "$IBL_PIN" ] && cred="&username=$IBL_USER&pin=$IBL_PIN"
 
   IFS="="
