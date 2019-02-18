@@ -1,2 +1,5 @@
 pg2ipset
 *.orig
+*.list
+*.conf
+*.cred

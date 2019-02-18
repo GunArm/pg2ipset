@@ -8,7 +8,8 @@
 # config: /etc/blocklists/ipset-update.conf
 # iblocklist list selection: /etc/blocklists/iblocklist.lists
 # iblocklist subscription pin: /etc/blocklists/iblocklist.cred
-
+# for running portably, configs will also be read from current dir
+# if config is in neither location, it will try to read the defaults
 
 if [ $EUID -ne 0 ]; then echo "Please run as root"; exit 1; fi
 
@@ -19,6 +20,14 @@ log(){
   echo $msg
   [ "$ENABLE_LOGGING" -ne "1" ] && return 0
   echo $(date "+%F %T")" - "$msg >> "$LOG_FILE"
+}
+
+findConf(){
+  if [ -f "$(pwd)/$1" ]; then echo "$(pwd)/$1"
+  elif [ -f "/etc/blocklists/$1" ]; then echo "/etc/blocklists/$1"
+  elif [ -f "$(pwd)/$1.default" ]; then echo "$(pwd)/$1.default"
+  elif [ -f "/etc/blocklists/$1.default" ]; then echo "/etc/blocklists/$1.default"
+  fi
 }
 
 importList(){
@@ -59,11 +68,18 @@ importList(){
   fi
 }
 
+
 #####################
 
-. /etc/blocklists/ipset-update.conf
+confPath=$(findConf ipset-update.conf)
+if [ -z "$confPath" ]; then
+  echo "No ipset-update.conf[.default] found in /etc/blocklists or $(pwd)"
+  exit 1
+fi
 
-log "Running blocklist update"
+. $confPath   # source in config file
+
+log "Running blocklist update.  Config file is $confPath"
 
 # place to keep our cached blocklists
 LISTDIR="/var/cache/blocklists"
@@ -83,9 +99,26 @@ IPTABLES=$(iptables-save)
 
 if [ $ENABLE_IBLOCKLIST = 1 ]; then
   log "Updating iblocklist lists..."
-  . /etc/blocklists/iblocklist.cred
-  [ -n "$IBL_USER" ] && [ -n "$IBL_PIN" ] && cred="&username=$IBL_USER&pin=$IBL_PIN"
 
+  # find credentials for iblocklist
+  credPath=$(findConf iblocklist.cred)
+  if [ -z "$credPath" ]; then
+    log "No iblocklist.cred[.default] found in /etc/blocklists or $(pwd)"
+  else
+    . $credPath   #souce in credentials file
+    if [ -n "$IBL_USER" ] && [ -n "$IBL_PIN" ]; then
+      cred="&username=$IBL_USER&pin=$IBL_PIN"
+      log "Got credentials from $credPath user is $IBL_USER"
+    else
+      log "No credentials provided in $credPath"
+    fi
+  fi
+
+  # find list config and parse into arrays
+  listPath=$(findConf iblocklist.lists)
+  if [ -z "$listPath" ]; then
+    log "No iblocklist.lists[.default] found in /etc/blocklists or $(pwd)"
+  fi
   IFS="="
   while read -r name value
   do
@@ -94,9 +127,10 @@ if [ $ENABLE_IBLOCKLIST = 1 ]; then
     # ignore comments and lines without both name and key
     [ -z "$name" ] || [ -z "$value" ] || [ ${name:0:1} = "#" ] && continue
     IBLNAME+=($name); IBLKEY+=($value)
-  done < /etc/blocklists/iblocklist.lists
-  IFS=""
-  log "Config iblocklist.lists specifies ${#IBLNAME[@]} enabled lists: ${IBLNAME[@]}"
+  done < $listPath
+  IFS=" "
+  log "Config $listPath specifies ${#IBLNAME[@]} enabled lists: ${IBLNAME[*]}"
+  IFS=
 
   # get, parse, and import the iblocklist lists
   # they are special in that they are gz compressed and require
