@@ -9,23 +9,6 @@
 # iblocklist list selection: /etc/blocklists/iblocklist.lists
 # iblocklist subscription pin: /etc/blocklists/iblocklist.cred
 
-. /etc/blocklists/ipset-update.conf
-
-# place to keep our cached blocklists
-LISTDIR="/var/cache/blocklists"
-
-# create cache directory for our lists if it isn't there
-[ ! -d $LISTDIR ] && mkdir $LISTDIR
-
-# remove old countries list
-[ -f $LISTDIR/countries.txt ] && rm $LISTDIR/countries.txt
-
-# remove the old tor node list
-[ -f $LISTDIR/tor.txt ] && rm $LISTDIR/tor.txt
-
-#cache a copy of the iptables rules
-IPTABLES=$(iptables-save)
-
 log(){
   [ -n "$1" ] && msg="$1" || read msg
   echo $msg
@@ -70,6 +53,29 @@ importList(){
 	log "FAILED attempted import! List $LISTDIR/$1.[txt,gz] does not exist."
   fi
 }
+
+#####################
+
+
+. /etc/blocklists/ipset-update.conf
+
+log "Running blocklist update"
+
+# place to keep our cached blocklists
+LISTDIR="/var/cache/blocklists"
+
+# create cache directory for our lists if it isn't there
+[ ! -d $LISTDIR ] && mkdir $LISTDIR
+
+# remove old countries list
+[ -f $LISTDIR/countries.txt ] && rm $LISTDIR/countries.txt
+
+# remove the old tor node list
+[ -f $LISTDIR/tor.txt ] && rm $LISTDIR/tor.txt
+
+#cache a copy of the iptables rules
+IPTABLES=$(iptables-save)
+
 
 if [ $ENABLE_IBLOCKLIST = 1 ]; then
   log "Updating iblocklist lists..."
