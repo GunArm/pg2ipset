@@ -47,6 +47,9 @@ importList(){
 	fi
 	
 	ipset swap $1 $1-TMP &> /dev/null
+	oldCount=$(ipset list $1-TMP | grep "entries" | awk '{print $4}')
+	newCount=$(ipset list $1 | grep "entries" | awk '{print $4}')
+	log "Set $1 length changed from $oldCount to $newCount"
 	ipset destroy $1-TMP &> /dev/null
 	
 	# only create if the iptables rules don't already exist
