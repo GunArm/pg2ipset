@@ -5,7 +5,8 @@ if [ $EUID -ne 0 ]; then echo "Please run as root"; exit 1; fi
 ENABLE_LOGGING=1
 LOG_FILE="/var/log/ipset-update.log"
 log(){
-  [ -n "$1" ] && msg="$1" || read msg
+  [ $# -gt 0 ] && msg="$1" || msg=$(cat /dev/stdin)
+  [ -z "$msg" ] && return 0
   echo $msg
   [ "$ENABLE_LOGGING" -ne "1" ] && return 0
   echo $(date "+%F %T")" - "$msg >> "$LOG_FILE"

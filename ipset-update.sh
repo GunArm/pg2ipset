@@ -16,7 +16,7 @@ if [ $EUID -ne 0 ]; then echo "Please run as root"; exit 1; fi
 #####################
 
 log(){
-  [ -n "$1" ] && msg="$1" || read msg
+  [ $# -gt 0 ] && msg="$1" || msg=$(cat /dev/stdin)
   [ -z "$msg" ] && return 0
   echo $msg
   [ "$ENABLE_LOGGING" -ne "1" ] && return 0
@@ -45,9 +45,9 @@ importList(){
 
   #the second param determines if we need to use zcat or not
   if [ $2 = 1 ]; then
-    zcat $LISTDIR/$1.gz | grep  -v \# | grep -v ^$ | grep -v 127\.0\.0 | pg2ipset - - $1-TMP | ipset restore
+    (zcat $LISTDIR/$1.gz | grep  -v \# | grep -v ^$ | grep -v 127\.0\.0 | pg2ipset - - $1-TMP | ipset restore) 2>&1 | log
   else
-    awk '!x[$0]++' $LISTDIR/$1.txt | grep  -v \# | grep -v ^$ |  grep -v 127\.0\.0 | sed -e "s/^/add\ \-exist\ $1\-TMP\ /" | ipset restore
+    (awk '!x[$0]++' $LISTDIR/$1.txt | grep  -v \# | grep -v ^$ |  grep -v 127\.0\.0 | sed -e "s/^/add\ \-exist\ $1\-TMP\ /" | ipset restore) 2>&1 | log
   fi
 
   ipset swap $1 $1-TMP &> /dev/null
@@ -79,7 +79,7 @@ applyIptablesRules(){
   postBlockRules=$(printf "$prevRuleset" | awk '/COMMIT/{if(filter)filterCommitted=1} {if(filterCommitted)print} /\*filter/{filter=1}')
   newRuleset="$preBlockRules\n$blockRules\n$postBlockRules"
   printf "Applying iptables rules\n$newRuleset\n"
-  printf "$newRuleset" | iptables-restore
+  (printf "$newRuleset" | iptables-restore) 2>&1 | log
 }
 
 #####################
