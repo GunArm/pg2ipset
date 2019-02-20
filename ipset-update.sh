@@ -31,43 +31,43 @@ findConf(){
 }
 
 importList(){
-  if [ -f $LISTDIR/$1.txt ] || [ -f $LISTDIR/$1.gz ]; then
-	log "Updating ipset $1..."
-	
-	ipset create -exist $1 hash:net maxelem 4294967295
-	ipset create -exist $1-TMP hash:net maxelem 4294967295
-	ipset flush $1-TMP &> /dev/null
+  if [ ! -f $LISTDIR/$1.txt ] && [ ! -f $LISTDIR/$1.gz ]; then
+    log "FAILED attempted import! List $LISTDIR/$1.[txt,gz] does not exist."
+    return 1
+  fi
 
-	#the second param determines if we need to use zcat or not
-	if [ $2 = 1 ]; then
-		zcat $LISTDIR/$1.gz | grep  -v \# | grep -v ^$ | grep -v 127\.0\.0 | pg2ipset - - $1-TMP | ipset restore
-	else
-		awk '!x[$0]++' $LISTDIR/$1.txt | grep  -v \# | grep -v ^$ |  grep -v 127\.0\.0 | sed -e "s/^/add\ \-exist\ $1\-TMP\ /" | ipset restore
-	fi
-	
-	ipset swap $1 $1-TMP &> /dev/null
-	oldCount=$(ipset list $1-TMP | grep "entries" | awk '{print $4}')
-	newCount=$(ipset list $1 | grep "entries" | awk '{print $4}')
-	log "Set $1 length changed from $oldCount to $newCount"
-	ipset destroy $1-TMP &> /dev/null
-	
-	# only create if the iptables rules don't already exist
-	if ! echo $IPTABLES|grep -q "\-A\ INPUT\ \-m\ set\ \-\-match\-set\ $1\ src\ \-\j\ DROP"; then
-	  log "Creating block rules for set $1"
-          iptables -A INPUT -m set --match-set $1 src -j ULOG --ulog-prefix "Blocked input $1"
-          iptables -A FORWARD -m set --match-set $1 src -j ULOG --ulog-prefix "Blocked fwd $1"
-          iptables -A FORWARD -m set --match-set $1 dst -j ULOG --ulog-prefix "Blocked fwd $1"
-          iptables -A OUTPUT -m set --match-set $1 dst -j ULOG --ulog-prefix "Blocked out $1"
+  log "Updating ipset $1..."
+  ipset create -exist $1 hash:net maxelem 4294967295
+  ipset create -exist $1-TMP hash:net maxelem 4294967295
+  ipset flush $1-TMP &> /dev/null
 
-	  iptables -A INPUT -m set --match-set $1 src -j DROP
-	  iptables -A FORWARD -m set --match-set $1 src -j DROP
-	  iptables -A FORWARD -m set --match-set $1 dst -j REJECT
-	  iptables -A OUTPUT -m set --match-set $1 dst -j REJECT
-        else
-	  log "Block rules exist for set $1"
-	fi
+  #the second param determines if we need to use zcat or not
+  if [ $2 = 1 ]; then
+    zcat $LISTDIR/$1.gz | grep  -v \# | grep -v ^$ | grep -v 127\.0\.0 | pg2ipset - - $1-TMP | ipset restore
   else
-	log "FAILED attempted import! List $LISTDIR/$1.[txt,gz] does not exist."
+    awk '!x[$0]++' $LISTDIR/$1.txt | grep  -v \# | grep -v ^$ |  grep -v 127\.0\.0 | sed -e "s/^/add\ \-exist\ $1\-TMP\ /" | ipset restore
+  fi
+
+  ipset swap $1 $1-TMP &> /dev/null
+  oldCount=$(ipset list $1-TMP | grep "entries" | awk '{print $4}')
+  newCount=$(ipset list $1 | grep "entries" | awk '{print $4}')
+  log "Set $1 length changed from $oldCount to $newCount"
+  ipset destroy $1-TMP &> /dev/null
+
+  # only create if the iptables rules don't already exist
+  if ! echo $IPTABLES|grep -q "\-A\ INPUT\ \-m\ set\ \-\-match\-set\ $1\ src\ \-\j\ DROP"; then
+    log "Creating block rules for set $1"
+    iptables -A INPUT -m set --match-set $1 src -j ULOG --ulog-prefix "Blocked input $1"
+    iptables -A FORWARD -m set --match-set $1 src -j ULOG --ulog-prefix "Blocked fwd $1"
+    iptables -A FORWARD -m set --match-set $1 dst -j ULOG --ulog-prefix "Blocked fwd $1"
+    iptables -A OUTPUT -m set --match-set $1 dst -j ULOG --ulog-prefix "Blocked out $1"
+
+    iptables -A INPUT -m set --match-set $1 src -j DROP
+    iptables -A FORWARD -m set --match-set $1 src -j DROP
+    iptables -A FORWARD -m set --match-set $1 dst -j REJECT
+    iptables -A OUTPUT -m set --match-set $1 dst -j REJECT
+  else
+    log "Block rules exist for set $1"
   fi
 }
 
