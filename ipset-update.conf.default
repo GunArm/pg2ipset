@@ -1,8 +1,14 @@
 # config for ipset-update.sh
 
 
+# logging of the update script itself
 ENABLE_LOGGING=1
 LOG_FILE="/var/log/ipset-update.log"
+
+# iptables log spec, for rules to log each blocked ip
+# If this is unset, iptables log rules will be skipped
+IPT_LOG="ULOG --ulog-prefix"
+
 
 # enable iblocklist lists?
 ENABLE_IBLOCKLIST=1

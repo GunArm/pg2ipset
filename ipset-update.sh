@@ -31,6 +31,7 @@ findConf(){
   fi
 }
 
+blockRules=
 importList(){
   if [ ! -f "$LISTDIR/$1.txt" ] && [ ! -f "$LISTDIR/$1.gz" ]; then
     log "FAILED attempted import! List $LISTDIR/$1.[txt,gz] does not exist."
@@ -55,25 +56,34 @@ importList(){
   log "Set $1 length changed from $oldCount to $newCount"
   ipset destroy "$1-TMP" &> /dev/null
 
-  # only create if the iptables rules don't already exist
-  if ! echo $IPTABLES|grep -q "\-A\ INPUT\ \-m\ set\ \-\-match\-set\ $1\ src\ \-\j\ DROP"; then
-    log "Creating block rules for set $1"
-    iptables -A INPUT -m set --match-set $1 src -j ULOG --ulog-prefix "Blocked input $1"
-    iptables -A FORWARD -m set --match-set $1 src -j ULOG --ulog-prefix "Blocked fwd $1"
-    iptables -A FORWARD -m set --match-set $1 dst -j ULOG --ulog-prefix "Blocked fwd $1"
-    iptables -A OUTPUT -m set --match-set $1 dst -j ULOG --ulog-prefix "Blocked out $1"
-
-    iptables -A INPUT -m set --match-set $1 src -j DROP
-    iptables -A FORWARD -m set --match-set $1 src -j DROP
-    iptables -A FORWARD -m set --match-set $1 dst -j REJECT
-    iptables -A OUTPUT -m set --match-set $1 dst -j REJECT
-  else
-    log "Block rules exist for set $1"
-  fi
+  # stage rules to apply atomically later.
+  # log rules will be skipped unless $IPT_LOG is set in config
+  add=
+  [ -n "$IPT_LOG" ] && add="${add}-A INPUT -m set --match-set $1 src -m comment --comment ipset-update -j $IPT_LOG \"Blocked src input $1\"\n"
+  add="${add}-A INPUT -m set --match-set $1 src -m comment --comment ipset-update -j DROP\n"
+  [ -n "$IPT_LOG" ] && add="${add}-A FORWARD -m set --match-set $1 src -m comment --comment ipset-update -j $IPT_LOG \"Blocked src fwd $1\"\n"
+  add="${add}-A FORWARD -m set --match-set $1 src -m comment --comment ipset-update -j DROP\n"
+  [ -n "$IPT_LOG" ] && add="${add}-A FORWARD -m set --match-set $1 dst -m comment --comment ipset-update -j $IPT_LOG \"Blocked dst fwd $1\"\n"
+  add="${add}-A FORWARD -m set --match-set $1 dst -m comment --comment ipset-update -j REJECT\n"
+  [ -n "$IPT_LOG" ] && add="${add}-A OUTPUT -m set --match-set $1 dst -m comment --comment ipset-update -j $IPT_LOG \"Blocked dst out $1\"\n"
+  add="${add}-A OUTPUT -m set --match-set $1 dst -m comment --comment ipset-update -j REJECT\n"
+  blockRules="${blockRules}${add}"
 }
 
+applyIptablesRules(){
+  #get ruleset with our previous rules dropped
+  prevRuleset=$(iptables-save | grep -v ipset-update)
+  # get everything to the end of the *filter section, ending just before COMMIT
+  preBlockRules="$(printf %b "$prevRuleset" | awk '/COMMIT/{if(filter)exit} {print} /\*filter/{filter=1}')"
+  # get the COMMIT terminating *filter and everything afterwards
+  postBlockRules=$(printf %b "$prevRuleset" | awk '/COMMIT/{if(filter)filterCommitted=1} {if(filterCommitted)print} /\*filter/{filter=1}')
+  newRuleset="$preBlockRules\n$blockRules\n$postBlockRules"
+  printf "Applying iptables rules\n%b\n" "$newRuleset"
+  printf "$newRuleset" | iptables-restore
+}
 
 #####################
+
 
 confPath=$(findConf ipset-update.conf)
 if [ -z "$confPath" ]; then
@@ -96,9 +106,6 @@ LISTDIR="/var/cache/blocklists"
 
 # remove the old tor node list
 [ -f "$LISTDIR/tor.txt" ] && rm "$LISTDIR/tor.txt"
-
-#cache a copy of the iptables rules
-IPTABLES=$(iptables-save)
 
 
 if [ "$ENABLE_IBLOCKLIST" = 1 ]; then
@@ -196,6 +203,8 @@ fi
 # add any custom import lists below
 # example: importList "custom"  # (would expect a txt list at $LISTDIR/custom.txt)
 
+log "Recreating iptables rules for enabled lists..."
+applyIptablesRules
 
 log "Completed ipset blocklist update"
 
