@@ -17,6 +17,7 @@ if [ $EUID -ne 0 ]; then echo "Please run as root"; exit 1; fi
 
 log(){
   [ -n "$1" ] && msg="$1" || read msg
+  [ -z "$msg" ] && return 0
   echo $msg
   [ "$ENABLE_LOGGING" -ne "1" ] && return 0
   echo $(date "+%F %T")" - "$msg >> "$LOG_FILE"
