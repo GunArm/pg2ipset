@@ -45,9 +45,9 @@ importList(){
 
   #the second param determines if we need to use zcat or not
   if [ $2 = 1 ]; then
-    (zcat $LISTDIR/$1.gz | grep  -v \# | grep -v ^$ | grep -v 127\.0\.0 | pg2ipset - - $1-TMP | ipset restore) 2>&1 | log
+    (zcat $LISTDIR/$1.gz | grep -a -v -e \# -e ^$ -e 127\.0\.0 | pg2ipset - - $1-TMP | ipset restore) 2>&1 | log
   else
-    (awk '!x[$0]++' $LISTDIR/$1.txt | grep  -v \# | grep -v ^$ |  grep -v 127\.0\.0 | sed -e "s/^/add\ \-exist\ $1\-TMP\ /" | ipset restore) 2>&1 | log
+    (awk '!x[$0]++' $LISTDIR/$1.txt | grep -a -v -e \# -e ^$ -e 127\.0\.0 | sed -e "s/^/add\ \-exist\ $1\-TMP\ /" | ipset restore) 2>&1 | log
   fi
 
   ipset swap $1 $1-TMP &> /dev/null
