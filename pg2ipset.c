@@ -70,6 +70,7 @@ int main(int argc, char* argv[]) {
 		fromaddr = strrchr(tok, ':');
 		if (!fromaddr) {
 			fprintf(stderr, "Line %u: Failed parsing 'from' address.\n", linecount);
+			fprintf(stderr, "Line %u input: %s\n", linecount, tok);
 			continue;
 		}
 		*fromaddr++ = 0;
@@ -77,6 +78,7 @@ int main(int argc, char* argv[]) {
 		toaddr = strchr(fromaddr, '-');
 		if (!toaddr) {
 			fprintf(stderr, "Line %u: Failed parsing 'to' address.\n", linecount);
+			fprintf(stderr, "Line %u input: %s\n", linecount, tok);
 			continue;
 		}
 		*toaddr++ = 0;
