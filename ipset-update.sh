@@ -12,6 +12,8 @@
 # if config is in neither location, it will try to read the defaults
 
 if [ $EUID -ne 0 ]; then echo "Please run as root"; exit 1; fi
+pg2ipset -h > /dev/null 2>&1
+if [ $? -ne 0 ]; then echo "Cannot update without pg2ipset installed."; exit 1; fi
 
 #####################
 
