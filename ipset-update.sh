@@ -13,6 +13,11 @@
 
 if [ $EUID -ne 0 ]; then echo "Please run as root"; exit 1; fi
 
+if ! pg2ipset -h > /dev/null 2>&1; then
+  echo "Cannot update without pg2ipset installed.";
+  exit 1;
+fi
+
 #####################
 
 log(){
