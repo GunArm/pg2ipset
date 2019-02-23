@@ -12,6 +12,7 @@ log(){
   echo $(date "+%F %T")" - "$msg >> "$LOG_FILE"
 }
 
+log $(printf "%60s" " " | tr ' ' '-') > /dev/null
 log "Running ipset-update setup..."
 
 # build and install pg2ipset.c

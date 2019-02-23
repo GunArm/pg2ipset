@@ -95,6 +95,7 @@ fi
 
 . $confPath   # source in config file
 
+log $(printf "%60s" " " | tr ' ' '-') > /dev/null
 log "Running blocklist update.  Config file is $confPath"
 
 # place to keep our cached blocklists
