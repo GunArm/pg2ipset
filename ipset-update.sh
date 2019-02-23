@@ -28,10 +28,11 @@ log(){
   echo "$(date '+%F %T') - $msg" >> "$LOG_FILE"
 }
 
+scriptDir=$(CDPATH="" cd -- "$(dirname -- "$0")" && pwd -P)
 findConf(){
-  if [ -f "$(pwd)/$1" ]; then echo "$(pwd)/$1"
+  if [ -f "$scriptDir/$1" ]; then echo "$scriptDir/$1"
   elif [ -f "/etc/blocklists/$1" ]; then echo "/etc/blocklists/$1"
-  elif [ -f "$(pwd)/$1.default" ]; then echo "$(pwd)/$1.default"
+  elif [ -f "$scriptDir/$1.default" ]; then echo "$scriptDir/$1.default"
   elif [ -f "/etc/blocklists/$1.default" ]; then echo "/etc/blocklists/$1.default"
   fi
 }
@@ -92,7 +93,7 @@ applyIptablesRules(){
 
 confPath=$(findConf ipset-update.conf)
 if [ -z "$confPath" ]; then
-  echo "No ipset-update.conf[.default] found in /etc/blocklists or $(pwd)"
+  echo "No ipset-update.conf[.default] found in /etc/blocklists or $scriptDir"
   exit 1
 fi
 
@@ -124,7 +125,7 @@ if [ "$ENABLE_IBLOCKLIST" = 1 ]; then
   # find credentials for iblocklist
   credPath=$(findConf iblocklist.cred)
   if [ -z "$credPath" ]; then
-    log "No iblocklist.cred[.default] found in /etc/blocklists or $(pwd)"
+    log "No iblocklist.cred[.default] found in /etc/blocklists or $scriptDir"
   else
     . "$credPath"   #souce in credentials file
     if [ -n "$IBL_USER" ] && [ -n "$IBL_PIN" ]; then
@@ -138,7 +139,7 @@ if [ "$ENABLE_IBLOCKLIST" = 1 ]; then
   # find list config and parse into arrays
   listPath=$(findConf iblocklist.lists)
   if [ -z "$listPath" ]; then
-    log "No iblocklist.lists[.default] found in /etc/blocklists or $(pwd)"
+    log "No iblocklist.lists[.default] found in /etc/blocklists or $scriptDir"
   fi
   IFS="="
   while read -r name value
