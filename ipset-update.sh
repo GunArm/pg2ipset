@@ -148,8 +148,8 @@ if [ "$ENABLE_IBLOCKLIST" = 1 ]; then
   # pg2ipset to be inserted
   for i in "${!IBLKEY[@]}"; do
     name=${IBLNAME[i]}; list=${IBLKEY[i]};
-    if [ eval $(wget --quiet -O /tmp/$name.gz http://list.iblocklist.com/?list=$list&fileformat=p2p&archiveformat=gz$cred) ]; then
-      mv /tmp/$name.gz $LISTDIR/$name.gz
+    if wget --quiet -O "/tmp/$name.gz" "http://list.iblocklist.com/?list=$list&fileformat=p2p&archiveformat=gz$cred"; then
+      mv "/tmp/$name.gz" "$LISTDIR/$name.gz"
       log "Retrieved iblocklist $name"
     else
       log "FAILED retrieving iblocklist $name.  Cache will be used."
@@ -166,7 +166,7 @@ if [ $ENABLE_COUNTRY = 1 ]; then
   IFS=""
   # get the country lists and cat them into a single file
   for country in ${COUNTRIES[@]}; do
-    if [ eval $(wget --quiet -O /tmp/$country.txt http://www.ipdeny.com/ipblocks/data/countries/$country.zone) ]; then
+    if wget --quiet -O "/tmp/$country.txt" "http://www.ipdeny.com/ipblocks/data/countries/$country.zone"; then
       cat "/tmp/$country.txt" >> "$LISTDIR/countries.txt"
       rm "/tmp/$country.txt"
       log "Retrieved ipdeny list for country \'$country\'"
@@ -186,7 +186,7 @@ if [ $ENABLE_TORBLOCK = 1 ]; then
   # get the tor lists and cat them into a single file
   for ip in $(ip -4 -o addr | awk '!/^[0-9]*: ?lo|link\/ether/ {gsub("/", " "); print $4}'); do
     for port in "${PORTS[@]}"; do
-      if [ eval $(wget --quiet -O /tmp/$port.txt https://check.torproject.org/cgi-bin/TorBulkExitList.py?ip=$ip&port=$port) ]; then
+      if wget --quiet -O "/tmp/$port.txt" "https://check.torproject.org/cgi-bin/TorBulkExitList.py?ip=$ip&port=$port"; then
         cat "/tmp/$port.txt" >> "$LISTDIR/tor.txt"
         rm "/tmp/$port.txt"
         log "Retrieved Tor Bulk Exit List for $ip:$port"
