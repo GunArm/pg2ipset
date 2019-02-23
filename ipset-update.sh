@@ -156,7 +156,9 @@ if [ $ENABLE_TORBLOCK = 1 ]; then
 fi
 
 # add any custom import lists below
-# ex: importTextList "custom"
+# example: importList "custom"  # (would expect a txt list at $LISTDIR/custom.txt)
 
 
 log "Completed ipset blocklist update"
+
+# ex: et sw=2 sts=2

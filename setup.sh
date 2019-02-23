@@ -72,3 +72,4 @@ cp ipset-update.sh /etc/cron.daily/ipset-update # no '.sh' extensions here
 
 log "Setup complete"
 
+# ex: et sw=2 sts=2
