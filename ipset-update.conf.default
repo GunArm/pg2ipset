@@ -7,7 +7,10 @@ LOG_FILE="/var/log/ipset-update.log"
 
 # iptables log spec, for rules to log each blocked ip
 # If this is unset, iptables log rules will be skipped
-IPT_LOG="ULOG --ulog-prefix"
+# You might need to install ulogd2 for these to work
+#IPT_LOG=
+IPT_LOG="NFLOG --nflog-prefix"   # should log out to /var/log/ulog/syslogemu.log
+#IPT_LOG="ULOG --ulog-prefix"
 
 
 # enable iblocklist lists?
