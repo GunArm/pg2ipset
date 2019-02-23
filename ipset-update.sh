@@ -25,10 +25,11 @@ log(){
   echo $(date "+%F %T")" - "$msg >> "$LOG_FILE"
 }
 
+scriptDir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 findConf(){
-  if [ -f "$(pwd)/$1" ]; then echo "$(pwd)/$1"
+  if [ -f "$scriptDir/$1" ]; then echo "$scriptDir/$1"
   elif [ -f "/etc/blocklists/$1" ]; then echo "/etc/blocklists/$1"
-  elif [ -f "$(pwd)/$1.default" ]; then echo "$(pwd)/$1.default"
+  elif [ -f "$scriptDir/$1.default" ]; then echo "$scriptDir/$1.default"
   elif [ -f "/etc/blocklists/$1.default" ]; then echo "/etc/blocklists/$1.default"
   fi
 }
