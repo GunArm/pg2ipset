@@ -73,3 +73,4 @@ cp ipset-update.sh /etc/cron.daily/ipset-update # no '.sh' extensions here
 log "Setup complete.  Set your lists at $confdir/iblocklist.lists"
 echo
 
+# ex: et sw=2 sts=2
