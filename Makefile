@@ -8,3 +8,6 @@ clean:
 
 install:
 	install pg2ipset /usr/bin/pg2ipset
+
+uninstall:
+	rm /usr/bin/pg2ipset
