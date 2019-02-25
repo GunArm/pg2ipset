@@ -13,6 +13,42 @@ log(){
 }
 
 log $(printf "%60s" " " | tr ' ' '-') > /dev/null
+
+LISTDIR=/var/cache/blocklists
+
+if [ "$1" = "-u" ]; then
+  log "Running ipset-update uninstall..."
+  log "Removing pg2ipset"
+  make uninstall 2>&1 | log
+  log "Removing scheduled update /etc/cron.daily/ipset-update"
+  rm /etc/cron.daily/ipset-update
+  log "Removing ipset-update iptables rules"
+  iptables-save | grep -v ipset-update | iptables-restore
+  read -p "Remove /etc/blocklists config? " -n 1 -r; echo;
+  if [ "$(echo "$REPLY" | tr '[:upper:]' '[:lower:]')" = "y" ]; then
+    log "Removing configuration"
+    rm /etc/blocklists/iblocklist.*
+    rm /etc/blocklists/ipset-update.conf*
+    rmdir /etc/blocklists 2>&1 | log
+  fi
+
+  for filename in $LISTDIR/*; do
+    [ ! -f "$filename" ] && continue
+    bname=$(basename $filename)
+    list=${bname%%.*}
+    log "Removing ipset (and cache) $filename"
+    if [ -n $list ]; then
+      ipset destroy $list 2>&1 | log 
+    fi
+    rm $filename
+  done
+  log "Removing cache folder"
+  rmdir $LISTDIR 2>&1 | log
+  log "Done."
+  exit 0
+fi
+
+
 log "Running ipset-update setup..."
 
 # build and install pg2ipset.c
