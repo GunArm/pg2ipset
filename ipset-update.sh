@@ -99,7 +99,11 @@ log "Running blocklist update.  Config file is $confPath"
 LISTDIR="/var/cache/blocklists"
 
 # create cache directory for our lists if it isn't there
-[ ! -d $LISTDIR ] && mkdir $LISTDIR
+[ ! -d "$LISTDIR" ] && mkdir -p $LISTDIR
+if [ ! -d "$LISTDIR" ]; then
+  log "Could not create blocklist cache dir $LISTDIR (LISTDIR in $confPath)"
+  exit 1
+fi
 
 # remove old countries list
 [ -f "$LISTDIR/countries.txt" ] && rm "$LISTDIR/countries.txt"
