@@ -3,3 +3,4 @@ pg2ipset
 *.list
 *.conf
 *.cred
+*.log
