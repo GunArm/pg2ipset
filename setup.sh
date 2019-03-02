@@ -20,7 +20,9 @@ if [ "$1" = "-u" ]; then
   log "Running ipset-update uninstall..."
   log "Removing pg2ipset"
   make uninstall 2>&1 | log
-  log "Removing scheduled update /etc/cron.daily/ipset-update"
+  log "Removing scheduled startup update /etc/cron.d/ipset-update-boot"
+  rm /etc/cron.d/ipset-update-boot
+  log "Removing scheduled daily update /etc/cron.daily/ipset-update"
   rm /etc/cron.daily/ipset-update
   log "Removing ipset-update iptables rules"
   iptables-save | grep -v ipset-update | iptables-restore
@@ -107,6 +109,10 @@ fi
 
 log "Scheduling ipset-update to run daily"
 cp ipset-update.sh /etc/cron.daily/ipset-update # no '.sh' extensions here
+
+log "Scheduling ipset-update to run at startup"
+printf "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin\n" > /etc/cron.d/ipset-update-boot
+printf "@reboot root /etc/cron.daily/ipset-update\n" >> /etc/cron.d/ipset-update-boot
 
 log "Setup complete.  Set your lists at $confdir/iblocklist.lists"
 echo
