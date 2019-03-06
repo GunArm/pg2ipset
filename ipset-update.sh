@@ -85,7 +85,11 @@ applyIptablesRules(){
   postBlockRules=$(printf %b "$prevRuleset" | awk '/COMMIT/{if(filter)filterCommitted=1} {if(filterCommitted)print} /\*filter/{filter=1}')
   newRuleset="$preBlockRules\n$blockRules\n$postBlockRules"
   printf "Applying iptables rules\n%b\n" "$newRuleset"
-  (printf "$newRuleset" | iptables-restore) 2>&1 | log
+  if ! result=$(printf %b "$newRuleset" | iptables-restore 2>&1); then
+    log "$result"
+    log "FAILED to apply filter rules!"
+    exit 1
+  fi
 }
 
 #####################
