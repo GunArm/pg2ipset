@@ -56,9 +56,9 @@ importList(){
     (awk '!x[$0]++' "$LISTDIR/$1.txt" | grep -a -v -e \# -e ^$ -e 127\.0\.0 | sed -e "s/^/add\ \-exist\ $1\-TMP\ /" | ipset restore) 2>&1 | log
   fi
 
-  ipset swap $1 $1-TMP &> /dev/null
-  oldCount=$(ipset list $1-TMP | grep "entries" | awk '{print $4}')
-  newCount=$(ipset list $1 | grep "entries" | awk '{print $4}')
+  ipset swap "$1" "$1-TMP" &> /dev/null
+  oldCount=$(ipset list "$1-TMP" | awk '{if(m)print} /Members:/{m=1}' | wc -l)
+  newCount=$(ipset list "$1" | awk '{if(m)print} /Members:/{m=1}' | wc -l)
   log "Set $1 length changed from $oldCount to $newCount"
   ipset destroy "$1-TMP" &> /dev/null
 
