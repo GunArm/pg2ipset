@@ -175,12 +175,12 @@ if [ "$ENABLE_IBLOCKLIST" = 1 ]; then
   log "Finished iblocklist update"
 fi
 
-if [ $ENABLE_COUNTRY = 1 ]; then
+if [ "$ENABLE_COUNTRY" = 1 ]; then
   IFS=" "
   log "Updating country blocklist.  ${#COUNTRIES[@]} specified: ${COUNTRIES[*]}"
   IFS=""
   # get the country lists and cat them into a single file
-  for country in ${COUNTRIES[@]}; do
+  for country in "${COUNTRIES[@]}"; do
     if wget --quiet -O "/tmp/$country.txt" "http://www.ipdeny.com/ipblocks/data/countries/$country.zone"; then
       cat "/tmp/$country.txt" >> "$LISTDIR/countries.txt"
       rm "/tmp/$country.txt"
@@ -194,7 +194,7 @@ if [ $ENABLE_COUNTRY = 1 ]; then
   log "Finished country blocklist update"
 fi
 
-if [ $ENABLE_TORBLOCK = 1 ]; then
+if [ "$ENABLE_TORBLOCK" = 1 ]; then
   IFS=" "
   log "Updating tor blocklist.  ${#PORTS[@]} specified to block tor users from: ${PORTS[*]}"
   IFS=""
