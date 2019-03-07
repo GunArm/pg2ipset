@@ -32,15 +32,15 @@ findConf(){
 }
 
 importList(){
-  if [ ! -f $LISTDIR/$1.txt ] && [ ! -f $LISTDIR/$1.gz ]; then
+  if [ ! -f "$LISTDIR/$1.txt" ] && [ ! -f "$LISTDIR/$1.gz" ]; then
     log "FAILED attempted import! List $LISTDIR/$1.[txt,gz] does not exist."
     return 1
   fi
 
   log "Updating ipset $1..."
-  ipset create -exist $1 hash:net maxelem 4294967295
-  ipset create -exist $1-TMP hash:net maxelem 4294967295
-  ipset flush $1-TMP &> /dev/null
+  ipset create -exist "$1" hash:net maxelem 4294967295
+  ipset create -exist "$1-TMP" hash:net maxelem 4294967295
+  ipset flush "$1-TMP" &> /dev/null
 
   #the second param determines if we need to use zcat or not
   if [ $2 = 1 ]; then
@@ -53,7 +53,7 @@ importList(){
   oldCount=$(ipset list $1-TMP | grep "entries" | awk '{print $4}')
   newCount=$(ipset list $1 | grep "entries" | awk '{print $4}')
   log "Set $1 length changed from $oldCount to $newCount"
-  ipset destroy $1-TMP &> /dev/null
+  ipset destroy "$1-TMP" &> /dev/null
 
   # only create if the iptables rules don't already exist
   if ! echo $IPTABLES|grep -q "\-A\ INPUT\ \-m\ set\ \-\-match\-set\ $1\ src\ \-\j\ DROP"; then
