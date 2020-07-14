@@ -18,8 +18,6 @@ LISTDIR=/var/cache/blocklists
 
 if [ "$1" = "-u" ]; then
   log "Running ipset-update uninstall..."
-  log "Removing pg2ipset"
-  make uninstall 2>&1 | log
   log "Removing scheduled startup update /etc/cron.d/ipset-update-boot"
   rm /etc/cron.d/ipset-update-boot
   log "Removing scheduled daily update /etc/cron.daily/ipset-update"
@@ -52,15 +50,6 @@ fi
 
 
 log "Running ipset-update setup..."
-
-# build and install pg2ipset.c
-if ! result=$(make build && make install && make clean 2>&1); then
-  log "$result"
-  log "FAILED to install pg2ipset tool!"
-  exit 1
-fi
-log "Installed pg2ipset list conversion tool"
-
 
 confdir=/etc/blocklists # path also hardcoded in ipset-update.sh
 echo Creating configuration in $confdir

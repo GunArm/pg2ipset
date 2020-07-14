@@ -20,14 +20,10 @@ http://ipset.netfilter.org/
 
 https://wiki.archlinux.org/index.php/Ipset
 
-http://www.maeyanie.com/2008/12/efficient-iptables-peerguardian-blocklist/
+http://www.maeyanie.com/2008/12/efficient-iptables-peerguardian-blocklist/ (original inspiration)
 
-pg2ipset takes the contents of PG2 IP Blocklists and outputs lists that
-ipset under Linux can consume, for more efficient blocking than most 
-other methods. 
-
-The ipset-update.sh script helps import these and
-plain text based blocklists easily, for scheduling via cron.
+The ipset-update.sh script takes the contents of PG2 IP Blocklists, converts them to a format that ipset under Linux can consume, for more efficient blocking than most other methods. 
+Expecting to be scheduled via cron.
 
 ======== 
 SETUP
@@ -39,7 +35,6 @@ SETUP
 
 The easiest way to get started blocking IPs is to **install the *ipset* package** and then run `setup.sh` which will do the following:
 
-* Build and install the pg2ipset tool which converts pg2 formatted ip lists into a format readable by ipset
 * Create the default configuration files in /etc/blocklists/
 * Prompt you for credentials in case you subscribe to iBlocklist's paid lists
 * Copy the update script into /etc/cron.daily for daily updating of rules
@@ -99,44 +94,6 @@ Here are some file locations that might be useful if you need to get your hands 
 `/var/log/ipset-update.log` - log file of ipset updates (not ip block events)
 
 ========
-PG2IPSET SOLO
-========
-
-pg2ipset can be used independently of the rest of the project
-
-### Install
-
-```make build && make install```
-
-(or just run make as root)
-
-### Usage
-
-The pg2 format is a simple line delineated file of entries in the form `description:fromAddr-toAddr`.  As the name implies, pg2ipset takes pg2 as input, drops the descriptions, and creates ipset entries from the ip ranges, which can be piped into `ipset restore`.
-
-To manually import from a .txt list from iBlocklist or any other pg2 format text input:
-
-```cat /path/to/blocklist.txt | pg2ipset - - listname | ipset restore```
-
-
-To manually import from a .gz list:
-
-```zcat /path/to/blocklist.gz | pg2ipset - - listname | ipset restore```
-
-To manually import a txt list of only IP addresses and/or CIDR ranges, 
-make sure to remove all comments and empty lines, then do the following:
-
-```awk '!x[$0]++' /path/to/blocklist.txt | sed -e "s/^/\-A\ \-exist\ listname\ /" | grep  -v \# | grep -v ^$ | ipset restore```
-
-Help text:
-
-	Usage: ./pg2ipset [<input> [<output> [<set name>]]]
-	Input should be a PeerGuardian .p2p file, blank or '-' reads from stdin.
-	Output is suitable for usage by 'ipset restore', blank or '-' prints to stdout.
-	Set name is 'IPFILTER' if not specified.
-	Example: curl http://www.example.com/guarding.p2p | ./pg2ipset | ipset restore
-
-========
 CRON SCHEDULING
 ========
 
@@ -144,17 +101,12 @@ The update script can be manually scheduled with cron, for example with `crontab
 
 ```0 0 * * * sh /path/to/ipset-update.sh >/dev/null 2>&1```
 
-You might need to provide a PATH variable that includes the pg2ipset install location.
-
 Be friendly and don't update more than once every 24 hours.
 
 ========
 LICENSE
 ========
 
-	pg2ipset.c - Convert PeerGuardian lists to IPSet scripts.
-	Copyright (C) 2009-2010, me@maeyanie.com
-	
 	ipset-update.sh - Automatically update and import pg2 format
 	and text based ipset blocklists.
 	Copyright (C) 2012-2015, parwok@gmail.com

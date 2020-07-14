@@ -13,12 +13,26 @@
 
 if [ $EUID -ne 0 ]; then echo "Please run as root"; exit 1; fi
 
-if ! pg2ipset -h > /dev/null 2>&1; then
-  echo "Cannot update without pg2ipset installed.";
-  exit 1;
-fi
-
 #####################
+
+convert-pg2-ipset(){
+  listName=$1
+  [ -z "$listName" ] && listName="noname-$(date +"%Y%m%d")"
+  grep -a -v -e \# -e ^$ -e 127\\.0\\.0\\. | # remove #comment_lines, empty lines, localhost references
+  awk -F: -vname=$listName '{print "add -exist "name" "$NF} END { print "COMMIT" }' | # convert pg2 to ipset
+  awk '!x[$0]++' # remove duplicate lines (without sorting)
+}
+
+convert-rawlist-ipset(){
+  # allows parsing lists with inline commented descriptions
+  listName=$1
+  [ -z "$listName" ] && listName="noname-$(date +"%Y%m%d")"
+  sed -e 's/\#.*$//' -e 's/[[:space:]]//g' | # remove comments, preserving whats before them, strip *all* whitespace
+  grep -v -e '^$' | # remove empty lines
+  grep -v -e 127\\.0\\.0\\. | # remove localhost lines
+  awk -vname=$listName '{print "add -exist "name" "$1} END { print "COMMIT" }' | # convert list to ipset
+  awk '!x[$0]++' # remove duplicate lines (without sorting)
+}
 
 log(){
   [ $# -gt 0 ] && msg="$1" || msg=$(cat /dev/stdin)
@@ -51,9 +65,9 @@ importList(){
 
   #the second param determines if we need to use zcat or not
   if [ "$2" = 1 ]; then
-    (zcat "$LISTDIR/$1.gz" | grep -a -v -e \# -e ^$ -e 127\.0\.0 | pg2ipset - - "$1-TMP" | ipset restore) 2>&1 | log
+    (zcat "$LISTDIR/$1.gz" | convert-pg2-ipset "$1-TMP" | ipset restore) 2>&1 | log
   else
-    (awk '!x[$0]++' "$LISTDIR/$1.txt" | grep -a -v -e \# -e ^$ -e 127\.0\.0 | sed -e "s/^/add\ \-exist\ $1\-TMP\ /" | ipset restore) 2>&1 | log
+    (cat "$LISTDIR/$1.txt" | convert-rawlist-ipset "$1-TMP" | ipset restore) 2>&1 | log
   fi
 
   ipset swap "$1" "$1-TMP" &> /dev/null
@@ -159,8 +173,7 @@ if [ "$ENABLE_IBLOCKLIST" = 1 ]; then
   IFS=
 
   # get, parse, and import the iblocklist lists
-  # they are special in that they are gz compressed and require
-  # pg2ipset to be inserted
+  # they are gz compressed and in pg2 format
   for i in "${!IBLKEY[@]}"; do
     name=${IBLNAME[i]}; list=${IBLKEY[i]};
     if wget --quiet -O "/tmp/$name.gz" "http://list.iblocklist.com/?list=$list&fileformat=p2p&archiveformat=gz$cred"; then
