@@ -52,41 +52,44 @@ findConf(){
 }
 
 blockRules=
-importList(){
-  if [ ! -f "$LISTDIR/$1.txt" ] && [ ! -f "$LISTDIR/$1.gz" ]; then
-    log "FAILED attempted import! List $LISTDIR/$1.[txt,gz] does not exist."
+importListFile(){
+  file=$1
+  name=${file%.*}
+
+  if [ ! -f "$LISTDIR/$file" ]; then
+    log "FAILED attempted import! List $LISTDIR/$file does not exist."
     return 1
   fi
 
-  log "Updating ipset $1..."
-  ipset create -exist "$1" hash:net maxelem 4294967295
-  ipset create -exist "$1-TMP" hash:net maxelem 4294967295
-  ipset flush "$1-TMP" &> /dev/null
+  log "Updating ipset $name..."
+  ipset create -exist "$name" hash:net maxelem 4294967295
+  ipset create -exist "$name-TMP" hash:net maxelem 4294967295
+  ipset flush "$name-TMP" &> /dev/null
 
   #the second param determines if we need to use zcat or not
   if [ "$2" = 1 ]; then
-    (zcat "$LISTDIR/$1.gz" | convert-pg2-ipset "$1-TMP" | ipset restore) 2>&1 | log
+    (zcat "$LISTDIR/$file" | convert-pg2-ipset "$name-TMP" | ipset restore) 2>&1 | log
   else
-    (cat "$LISTDIR/$1.txt" | convert-rawlist-ipset "$1-TMP" | ipset restore) 2>&1 | log
+    (cat "$LISTDIR/$file" | convert-rawlist-ipset "$name-TMP" | ipset restore) 2>&1 | log
   fi
 
-  ipset swap "$1" "$1-TMP" &> /dev/null
-  oldCount=$(ipset list "$1-TMP" | awk '{if(m)print} /Members:/{m=1}' | wc -l)
-  newCount=$(ipset list "$1" | awk '{if(m)print} /Members:/{m=1}' | wc -l)
-  log "Set $1 length changed from $oldCount to $newCount"
-  ipset destroy "$1-TMP" &> /dev/null
+  ipset swap "$name" "$name-TMP" &> /dev/null
+  oldCount=$(ipset list "$name-TMP" | awk '{if(m)print} /Members:/{m=1}' | wc -l)
+  newCount=$(ipset list "$name" | awk '{if(m)print} /Members:/{m=1}' | wc -l)
+  log "Set $name length changed from $oldCount to $newCount"
+  ipset destroy "$name-TMP" &> /dev/null
 
   # stage rules to apply atomically later.
   # log rules will be skipped unless $IPT_LOG is set in config
   add=
-  [ -n "$IPT_LOG" ] && add="${add}-A INPUT -m set --match-set $1 src -m comment --comment ipset-update -j $IPT_LOG \"Blocked src input $1\"\n"
-  add="${add}-A INPUT -m set --match-set $1 src -m comment --comment ipset-update -j DROP\n"
-  [ -n "$IPT_LOG" ] && add="${add}-A FORWARD -m set --match-set $1 src -m comment --comment ipset-update -j $IPT_LOG \"Blocked src fwd $1\"\n"
-  add="${add}-A FORWARD -m set --match-set $1 src -m comment --comment ipset-update -j DROP\n"
-  [ -n "$IPT_LOG" ] && add="${add}-A FORWARD -m set --match-set $1 dst -m comment --comment ipset-update -j $IPT_LOG \"Blocked dst fwd $1\"\n"
-  add="${add}-A FORWARD -m set --match-set $1 dst -m comment --comment ipset-update -j REJECT\n"
-  [ -n "$IPT_LOG" ] && add="${add}-A OUTPUT -m set --match-set $1 dst -m comment --comment ipset-update -j $IPT_LOG \"Blocked dst out $1\"\n"
-  add="${add}-A OUTPUT -m set --match-set $1 dst -m comment --comment ipset-update -j REJECT\n"
+  [ -n "$IPT_LOG" ] && add="${add}-A INPUT -m set --match-set $name src -m comment --comment ipset-update -j $IPT_LOG \"Blocked src input $name\"\n"
+  add="${add}-A INPUT -m set --match-set $name src -m comment --comment ipset-update -j DROP\n"
+  [ -n "$IPT_LOG" ] && add="${add}-A FORWARD -m set --match-set $name src -m comment --comment ipset-update -j $IPT_LOG \"Blocked src fwd $name\"\n"
+  add="${add}-A FORWARD -m set --match-set $name src -m comment --comment ipset-update -j DROP\n"
+  [ -n "$IPT_LOG" ] && add="${add}-A FORWARD -m set --match-set $name dst -m comment --comment ipset-update -j $IPT_LOG \"Blocked dst fwd $name\"\n"
+  add="${add}-A FORWARD -m set --match-set $name dst -m comment --comment ipset-update -j REJECT\n"
+  [ -n "$IPT_LOG" ] && add="${add}-A OUTPUT -m set --match-set $name dst -m comment --comment ipset-update -j $IPT_LOG \"Blocked dst out $name\"\n"
+  add="${add}-A OUTPUT -m set --match-set $name dst -m comment --comment ipset-update -j REJECT\n"
   blockRules="${blockRules}${add}"
 }
 
@@ -183,7 +186,7 @@ if [ "$ENABLE_IBLOCKLIST" = 1 ]; then
       log "FAILED retrieving iblocklist $name.  Cache will be used."
     fi
 
-    importList "$name" 1
+    importListFile "${name}.gz" 1
   done
   log "Finished iblocklist update"
 fi
@@ -203,7 +206,7 @@ if [ "$ENABLE_COUNTRY" = 1 ]; then
     fi
   done
   
-  importList "countries" 0
+  importListFile "countries.txt" 0
   log "Finished country blocklist update"
 fi
 
@@ -224,7 +227,7 @@ if [ "$ENABLE_TORBLOCK" = 1 ]; then
     done
   done 
   
-  importList "tor" 0
+  importListFile "tor.txt" 0
   log "Finished tor blocklist update"
 fi
 
