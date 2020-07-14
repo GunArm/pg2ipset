@@ -66,6 +66,12 @@ importListFile(){
   fi
   in_fmt=$2
 
+  if [ "$3" != "block" ] && [ "$3" != "allow" ]; then
+    log "No/Bad firewall action specified (block,allow)"
+    return 1
+  fi
+  action=$3
+
   log "Updating ipset $name..."
   ipset create -exist "$name" hash:net maxelem 4294967295
   ipset create -exist "$name-TMP" hash:net maxelem 4294967295
@@ -87,18 +93,31 @@ importListFile(){
   log "Set $name length changed from $oldCount to $newCount"
   ipset destroy "$name-TMP" &> /dev/null
 
-  # stage rules to apply atomically later.
-  # log rules will be skipped unless $IPT_LOG is set in config
-  add=
-  [ -n "$IPT_LOG" ] && add="${add}-A INPUT -m set --match-set $name src -m comment --comment ipset-update -j $IPT_LOG \"Blocked src input $name\"\n"
-  add="${add}-A INPUT -m set --match-set $name src -m comment --comment ipset-update -j DROP\n"
-  [ -n "$IPT_LOG" ] && add="${add}-A FORWARD -m set --match-set $name src -m comment --comment ipset-update -j $IPT_LOG \"Blocked src fwd $name\"\n"
-  add="${add}-A FORWARD -m set --match-set $name src -m comment --comment ipset-update -j DROP\n"
-  [ -n "$IPT_LOG" ] && add="${add}-A FORWARD -m set --match-set $name dst -m comment --comment ipset-update -j $IPT_LOG \"Blocked dst fwd $name\"\n"
-  add="${add}-A FORWARD -m set --match-set $name dst -m comment --comment ipset-update -j REJECT\n"
-  [ -n "$IPT_LOG" ] && add="${add}-A OUTPUT -m set --match-set $name dst -m comment --comment ipset-update -j $IPT_LOG \"Blocked dst out $name\"\n"
-  add="${add}-A OUTPUT -m set --match-set $name dst -m comment --comment ipset-update -j REJECT\n"
-  blockRules="${blockRules}${add}"
+  if [ "$action" == "block" ]; then
+    # stage block rules to apply atomically later.
+    # log rules will be skipped unless $IPT_LOG is set in config
+    add=
+    [ -n "$IPT_LOG" ] && add="${add}-A INPUT -m set --match-set $name src -m comment --comment ipset-update -j $IPT_LOG \"Blocked src input $name\"\n"
+    add="${add}-A INPUT -m set --match-set $name src -m comment --comment ipset-update -j DROP\n"
+    [ -n "$IPT_LOG" ] && add="${add}-A FORWARD -m set --match-set $name src -m comment --comment ipset-update -j $IPT_LOG \"Blocked src fwd $name\"\n"
+    add="${add}-A FORWARD -m set --match-set $name src -m comment --comment ipset-update -j DROP\n"
+    [ -n "$IPT_LOG" ] && add="${add}-A FORWARD -m set --match-set $name dst -m comment --comment ipset-update -j $IPT_LOG \"Blocked dst fwd $name\"\n"
+    add="${add}-A FORWARD -m set --match-set $name dst -m comment --comment ipset-update -j REJECT\n"
+    [ -n "$IPT_LOG" ] && add="${add}-A OUTPUT -m set --match-set $name dst -m comment --comment ipset-update -j $IPT_LOG \"Blocked dst out $name\"\n"
+    add="${add}-A OUTPUT -m set --match-set $name dst -m comment --comment ipset-update -j REJECT\n"
+    blockRules="${blockRules}${add}"
+  elif [ "$action" == "allow" ]; then
+    # stage allow rules to apply atomically later.
+    add=
+    add="${add}-A INPUT -m set --match-set $name src -m comment --comment ipset-update -j ACCEPT\n"
+    add="${add}-A FORWARD -m set --match-set $name src -m comment --comment ipset-update -j ACCEPT\n"
+    add="${add}-A FORWARD -m set --match-set $name dst -m comment --comment ipset-update -j ACCEPT\n"
+    add="${add}-A OUTPUT -m set --match-set $name dst -m comment --comment ipset-update -j ACCEPT\n"
+    blockRules="${blockRules}${add}"
+  else
+    log "Unrecognized firewall action"
+    return 1
+  fi
 }
 
 applyIptablesRules(){
@@ -194,7 +213,7 @@ if [ "$ENABLE_IBLOCKLIST" = 1 ]; then
       log "FAILED retrieving iblocklist $name.  Cache will be used."
     fi
 
-    importListFile "${name}.gz" gz
+    importListFile "${name}.gz" gz block
   done
   log "Finished iblocklist update"
 fi
@@ -214,7 +233,7 @@ if [ "$ENABLE_COUNTRY" = 1 ]; then
     fi
   done
   
-  importListFile "countries.txt" raw
+  importListFile "countries.txt" raw block
   log "Finished country blocklist update"
 fi
 
@@ -235,7 +254,7 @@ if [ "$ENABLE_TORBLOCK" = 1 ]; then
     done
   done 
   
-  importListFile "tor.txt" raw
+  importListFile "tor.txt" raw block
   log "Finished tor blocklist update"
 fi
 
