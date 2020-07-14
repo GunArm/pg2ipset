@@ -55,11 +55,16 @@ blockRules=
 importListFile(){
   file=$1
   name=${file%.*}
-
   if [ ! -f "$LISTDIR/$file" ]; then
     log "FAILED attempted import! List $LISTDIR/$file does not exist."
     return 1
   fi
+
+  if [ "$2" != "gz" ] && [ "$2" != "raw" ]; then
+    log "No/Bad input format provided (gz,raw)"
+    return 1
+  fi
+  in_fmt=$2
 
   log "Updating ipset $name..."
   ipset create -exist "$name" hash:net maxelem 4294967295
@@ -67,10 +72,13 @@ importListFile(){
   ipset flush "$name-TMP" &> /dev/null
 
   #the second param determines if we need to use zcat or not
-  if [ "$2" = 1 ]; then
+  if [ "$in_fmt" == "gz" ]; then
     (zcat "$LISTDIR/$file" | convert-pg2-ipset "$name-TMP" | ipset restore) 2>&1 | log
-  else
+  elif [ "$in_fmt" == "raw" ]; then
     (cat "$LISTDIR/$file" | convert-rawlist-ipset "$name-TMP" | ipset restore) 2>&1 | log
+  else
+    log "Unrecognized input format"
+    return 1
   fi
 
   ipset swap "$name" "$name-TMP" &> /dev/null
@@ -186,7 +194,7 @@ if [ "$ENABLE_IBLOCKLIST" = 1 ]; then
       log "FAILED retrieving iblocklist $name.  Cache will be used."
     fi
 
-    importListFile "${name}.gz" 1
+    importListFile "${name}.gz" gz
   done
   log "Finished iblocklist update"
 fi
@@ -206,7 +214,7 @@ if [ "$ENABLE_COUNTRY" = 1 ]; then
     fi
   done
   
-  importListFile "countries.txt" 0
+  importListFile "countries.txt" raw
   log "Finished country blocklist update"
 fi
 
@@ -227,7 +235,7 @@ if [ "$ENABLE_TORBLOCK" = 1 ]; then
     done
   done 
   
-  importListFile "tor.txt" 0
+  importListFile "tor.txt" raw
   log "Finished tor blocklist update"
 fi
 
