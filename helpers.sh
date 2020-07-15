@@ -21,7 +21,19 @@ whitelist-ip() {
     return 1
   fi
 
-  printf "%s #%s\n" "$ip" "$desc" >> /etc/blocklists/whitelist.txt
+  if [[ "$(find-in-ipsets "$ip")" == *"whitelist"* ]]; then
+    echo "$ip is already on whitelist"
+    return 1
+  fi
+
+  if [[ -z "$(find-in-ipsets "$ip")" ]]; then
+    read -p "$ip is NOT currently blocked.  Whitelist anyway? " -n 1 -r; echo;
+    if [ "$(echo "$REPLY" | tr '[:upper:]' '[:lower:]')" != "y" ]; then
+      return 1
+    fi
+  fi
+
+  printf "%s #%s\n" "$ip" "$desc" | sudo tee -a /etc/blocklists/whitelist.txt > /dev/null
   echo "Done.  Run ipset-update to apply new items"
 }
 
