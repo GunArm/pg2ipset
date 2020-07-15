@@ -1,6 +1,6 @@
 #!/bin/bash
 
-find-blocking-ipset() {
+find-in-ipsets() {
   local test_ip=$1
   local IFS=$'\n'
   for setname in $(sudo ipset -n list); do 
