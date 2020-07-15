@@ -166,6 +166,18 @@ fi
 # remove the old tor node list
 [ -f "$LISTDIR/tor.txt" ] && rm "$LISTDIR/tor.txt"
 
+# remove the old whitelist
+[ -f "$LISTDIR/whitelist.txt" ] && rm "$LISTDIR/whitelist.txt"
+
+# set up whitelist
+allowList=$(findConf whitelist.txt)
+if [ -f "$allowList" ]; then
+  log "Establishing whitelist"
+  cp "$allowList" "$LISTDIR"
+  importListFile "whitelist.txt" raw allow
+  log "Finished whitelist update"
+fi
+
 
 if [ "$ENABLE_IBLOCKLIST" = 1 ]; then
   log "Updating iblocklist lists..."

@@ -29,6 +29,7 @@ if [ "$1" = "-u" ]; then
     log "Removing configuration"
     rm /etc/blocklists/iblocklist.*
     rm /etc/blocklists/ipset-update.conf*
+    rm /etc/blocklists/whitelist.txt
     rmdir /etc/blocklists 2>&1 | log
   fi
 
